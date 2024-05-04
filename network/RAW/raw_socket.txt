@@ -1,0 +1,141 @@
+/*
+ * author: inkXu
+ * date:   2022.10.5
+ *
+ * 原始套接字
+ */
+
+  原始套接字的概述
+
+  原始套接字（SOCK_RAW)
+  1) 一种不同于SOCK_STREAM、SOCK_DGRAM的套接字，它实现于系统的核心
+  2) 可以接收本机网卡上的所有数据帧（数据包），对于监听网络流量和分析网络数据很有用
+  3) 开发人员可以发送自己组装的数据包到网络上
+  4) 广泛应用于高级网络编程
+  5) 网络专家、黑客通常会用此来编写奇特的网络程序
+
+
+  流式套接字
+
+  流式套接字只能收发到TCP数据
+
+
+  数据报套接字
+
+  数据报套接字只能收发到UDP数据
+
+
+  原始套接字
+
+  1) 内核没有处理的数据包
+  2) 发送的数据需要使用原始套接字(SOCK_RAW)
+
+
+  创建原始套接字
+
+  int socket(int domain, int type, int protocol);
+  功能：
+      创建链路层的原始套接字
+  参数：
+      domain: 通信域，地址族
+                PF_PACKET 或 AF_PACKET，两者是宏定义关系
+      type: 套接字类型
+                SOCK_RAW
+      protocol：附加协议，指定可以接收或发送的数据包类型
+                #include <netinet/ether.h>
+                ETH_P_IP：IPv4数据包
+                ETH_P_ARP：ARP数据包
+                ETH_P_ALL：任何协议类型的数据包，该类型占2字节，是一个四位16进制数(0x0003)，
+                           所以需要将之转换为网络字节序
+  返回值：
+      成功(>0): 链路层套接字，文件描述符
+      失败(<0): 出错，-1
+
+
+  注意：使用原始套接字的程序需要管理员权限
+
+
+
+  使用sendto发送原始套接字数据
+
+  sendto(sock_raw_fd, msg, msg_len, 0, (struct sockaddr *)&sll, sizeof(sll));
+
+  注意：
+    1) sock_raw_fd: 原始套接字
+    2) msg: 发送的消息(封装好的协议数据)
+    3) sll: 本机网络接口，指发送的数据应该从哪个网卡出去，而不是以前的目的地址
+
+
+
+  本机网络接口
+
+  #include <netpacket/packet.h>
+  struct sockaddr_ll
+  {
+    unsigned short int sll_family;            // 一般为PF_PACKET
+    unsigned short int sll_protocol;          // 上层协议
+    int sll_ifindex;                          // 接口类型
+    unsigned short int sll_hatype;            // 报头类型
+    unsigned char sll_pkttype;                // 包类型
+    unsigned char sll_halen;                  // 地址长度
+    unsigned char sll_addr[8];                // MAC地址
+  }
+  只需要对sll.sll_ifindex赋值即可
+
+
+
+  使用原始套接字发送数据流程
+
+  sockfd = socket();
+  struct sockaddr_ll sll;
+  bzero(&sll, sizeof(sll));
+  sll.sll_ifindex = ???      //???为当前要出去的网络接口的地址
+  if (sendto(sockfd, msg, sizeof(msg), 0, (struct sockaddr *)&sll, sizeof(sll)) < 0)
+  {
+    perror("sendto");
+    exit(EXIT_FAILURE);
+  }
+
+
+
+  通过ioctl来获取网络接口地址(底层驱动也会使用这函数)
+
+    #include <sys/ioctl.h>
+    int ioctl(int fd, int request, void *);
+    int ioctl(int fd, unsigned long request, ...);
+
+    ioctl参数对照表
+      类别                      request               说明             数据类型
+      接口                  SIOCGIFINDEX          获取网络接口      struct ifreq
+      接口                  SIOCSIFADDR           设置网络接口      struct ifreq
+      接口                  SIOCGIFADDR           获取接口地址      struct ifreq
+      接口                  SIOCSIFFLAGS          设置接口标志      struct ifreq
+      接口                  SIOCGIFFLAGS          获取接口标志      struct ifreq
+
+  获取网卡参数实例：
+      struct ifreq ethreq;
+      strncpy(ethreq.ifr_name, "eth0", IFNAMSIZE);
+      if (ioctl(sock_raw_fd, SIOCGIFINDEX, &ethreq) == -1)
+      {
+        perror("ioctl");
+        close(sock_raw_fd);
+        exit(-1);
+      }
+      struct sockaddr_ll sll;
+      bzero(&sll, sizeof(sll));
+      sll.sll_ifindex = ethreq.ifr_ifindex;
+      int len = sendto(sock_raw_fd, msg, sizeof(msg), 0, (struct sockaddr *)&sll, sizeof(sll));
+
+
+  
+
+
+
+
+
+
+
+
+
+
+

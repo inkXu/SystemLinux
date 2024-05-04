@@ -1,0 +1,69 @@
+/*
+ * author: inkXu
+ * date:   2022.8.30
+ *
+ * 互斥锁
+ */
+
+  概念
+
+  mutex是一种简单的加锁的方法来控制对共享资源的访问，mutex只有两种状态，即上锁（lock）和解锁（unlock），在
+  访问该资源前，首先应申请mutex，如果mutex处于unlock状态，则会申请到mutex并立即lock；如果mutex处于lock状态，
+  则默认阻塞申请者，unlock操作应该由lock者进行，如果不在需要使用该互斥锁，应该销毁该互斥锁
+
+
+
+  初始化互斥锁
+
+  静态分配的互斥锁
+  互斥锁是pthread_mutex_t类型，使用前必须对互斥锁进行初始化，所以可以定义在互斥锁时直接初始化
+  pthread_mutex_t mymutex = PTHREAD_MUTEX_INITIALIZER;
+
+  动态分配的互斥锁
+  int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
+  mutex：互斥锁地址
+  attr：互斥锁的属性，NULL为默认的属性
+  成功返回0，失败非0
+  可以使用pthread_mutex_init函数初始化互斥锁，例如：
+  pthread_mutex_t mymutex;
+  pthread_mutex_init(&mymutex, NULL);
+
+
+
+  互斥锁上锁
+
+  int pthread_mutex_lock(pthread_mutex_t *mutex);
+  对互斥锁上锁，若是已经上锁，则调用者一直阻塞到互斥锁解锁
+  mutex：互斥锁地址
+  成功返回0，失败非0
+
+  int pthread_mutex_trylock(pthread_mutex_t *mutex);
+  对互斥锁上锁，若是已经上锁，则上锁失败，函数立即返回，相当于非阻塞，函数继续运行
+  mutex：互斥锁地址
+  成功返回0，失败非0
+
+
+
+  互斥锁解锁
+
+  int pthread_mutex_unlock(pthread_mutex_t *mutex);
+  对指定的互斥锁解锁
+  mutex：互斥锁地址
+  成功返回0，失败非0
+
+
+  销毁互斥锁
+
+  int pthread_mutex_destroy(pthread_mutex_t *mutex);
+  销毁指定的一个互斥锁
+  mutex：互斥锁地址
+  成功返回0，失败非0
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,21 @@
+CC=gcc
+#CC=arm-linux-gcc
+obj=book
+obj1=sum
+obj2=mul
+OBJ=book.o sum.o mul.o
+target=book
+CFLAGS=-Wall -g
+
+$(target):$(OBJ)
+	$(CC) -o $@ $^
+
+$(obj).o:$(obj).c
+	$(CC) $(CFLAGS) -c $< -o $@
+$(obj1).o:$(obj1).c
+	$(CC) $(CFLAGS) -c $< -o $@
+$(obj2).o:$(obj2).c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf *.o a.out

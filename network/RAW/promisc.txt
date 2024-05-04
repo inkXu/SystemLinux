@@ -1,0 +1,57 @@
+/*
+ * author: inkXu
+ * date:   2022.10.10
+ *
+ * 混杂模式
+ */
+
+  混杂模式
+
+    1) 指一台机器的网卡能够接收所有经过它的数据包，而不论其目的地址是否是它。
+    2) 一般计算机网卡都工作在非混杂模式下，只有root权限才能将网卡设置为混杂模式。
+
+  linux下设置混杂模式
+
+    1) 设置混杂模式: ifconfig eth0 promisc
+    2) 取消混杂模式：ifconfig eth0 -promisc
+    3) 通过代码设置
+        struct ifreq etherq;
+        strncpy(ehterq.ifr_name, "eth0", IFNAMSIZ);
+        // 获取网络接口标识
+        if (ioctl(sock_raw_fd, SIOCGIFFLAGS, &ethreq) != 0) //获取eth0网络接口标识
+        {
+          perror("ioctl");
+          close(sock_raw_fd);
+          exit(EXIT_FAILTURE);
+        }
+        // 设置网络接口标识
+        ethreq.ifr_flags |= IFF_PROMISC;
+        if (ioctl(sock_raw_fd, SIOCSIFFLAGS, &ethreq) != 0) //设置eth0网络接口标识
+        {
+          perror("ioctl");
+          close(sock_raw_fd);
+          exit(EXIT_FAILTURE);
+        }
+
+  windos下需要通过特定的软件实现
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

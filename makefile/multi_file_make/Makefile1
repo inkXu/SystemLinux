@@ -1,0 +1,15 @@
+CC=gcc
+#CC=arm-linux-gcc
+obj1=sum
+obj2=mul
+OBJ=book.c sum.o mul.o
+target=book
+
+$(target):$(OBJ)
+	$(CC) -o $(target) $(OBJ)
+$(obj1).o:$(obj1).c
+	$(CC) -c $(obj1).c -o $(obj1).o
+$(obj2).o:$(obj2).c
+	$(CC) -c $(obj2).c -o $(obj2).o
+clean:
+	rm -rf *.o

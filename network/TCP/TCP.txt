@@ -1,0 +1,218 @@
+
+  TCP介绍、编程流程
+
+  TCP回顾
+
+  1) 面向连接的流式协议、出错从传、且每收到一个数据都要给出相应的确认
+  2) 通信之前需要建立连接
+  3) 服务器被动链接，客户端是主动链接
+
+
+  TCP与UDP的差异
+
+  1) TCP是面向连接的协议，UDP不是
+  2) TCP是可靠的，UDP不是
+  3) TCP不支持广播和多播，UDP支持
+  4) TCP效率底，UDP效率高
+
+
+  TCP C/S架构
+
+                                                          TCP服务器
+                                                         +-------------+
+                                                         |   socket    |
+                                                         +-------------+
+                                                                |
+                                                         +-------------+
+                                                         |    bind     |
+                                                         +-------------+
+                    客户端                                      |
+                 +------------+                          +-------------+
+                 |   socket   |                          |   listen    |
+                 +------------+                          +-------------+
+                       |                                        |
+                 +------------+      建立连接            +-------------+
+                 |   connect  |----------------------->  |   accept    | 该函数会阻塞等待
+                 +------------+      TCP三次握手         +-------------+ 直到客户端连接到达
+            +--------->|                                        | <---------+
+            |    +------------+                          +-------------+    |
+            |    | write/send |                          |  read/recv  |    |
+            |    +------------+                          +-------------+    |
+            |          |                                        |           |
+            |    +------------+                              处理数据       |
+            |    | read/recv  |                                 |           |
+            |    +------------+                          +-------------+    |
+            +----------|                                 |  write/send |    |
+                 +------------+                          +-------------+    |
+                 |    close   |                                 |-----------+
+                 +------------+                          +-------------+
+                                                         |    close    |
+                                                         +-------------+
+
+
+    TCP通信流程
+
+    服务器：
+        创建套接字socket()
+        将网络信息结构体与套接字绑定bind()
+        将套接字设置为监听状态listen()
+        阻塞等待客户端的连接请求accept()
+        接收客户端数据read()/recv()
+        向客户端发送数据write()/send()
+        通信结束关闭连接的网络套接字close()
+    客户端：
+        创建套接字socket()
+        连接服务器connect()
+        向服务器发送数据send()/write()
+        接收服务器的数据recv()/read()
+        关闭网络套接字close()
+
+
+  TCP客户端
+
+  socket      使用IPv4协议：AF_INET   使用IPv6协议：AF_INET6
+              UDP数据包：SOCK_DGRAM   TCP协议，流式数据包：SOCK_STREAEM
+
+  int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+              addr  连接的服务器网络信息结构体信息
+              addrlen   网络信息结构体的大小
+              成功返回0，失败-1
+              主动和服务器建立连接
+              connect建立连接之后不会产生新的套接字，accept会
+              连接成功后才可以开始传输TCP数据
+
+  int send(int s, const void *msg, size_t len, int flags);
+              msg    需要发送的信息
+              len    发送信息长度，以字节为单位
+              flags  套接字标志
+              成功返回发送字符数，失败返回-1
+              不能发送字符为0的数据包，UDP协议可以
+
+  ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+              类似send
+
+
+  TCP服务器端
+
+  作为TCP服务器需要具备的条件
+    1) 具备一个可以明确的地址，bind函数
+    2) 让操作系统直到是一个服务器，而不是客户端，listen和accept函数
+    3) 等待连接的到来，accept函数
+    对于面向连接的TCP协议来说，连接的建立才是数据通信的开始
+
+  socket
+
+  int bind(int sockfd, struct sockaddr *my_addr, socklen_t addrlen);
+      sockaddr_in所在头文件 netinet/in.h
+      使用的网络信息结构体IP可以写INADDR_ANY(0.0.0.0)，不知道为啥
+
+  int listen(int socket, int backlog);
+      将套接字由主动转换为被动，使操作系统为该套接字设置一个连接队列，用来记录所有连接到该套接字的连接
+      sockfd：socket监听套接字
+      backlog：连接队列的长度
+
+  int accept(int s, struct sockaddr *addr, socklen_t *addrlen);
+      从已连接队列中取出一个已经建立的连接，如若没有任何连接可用，则进入睡眠等待（阻塞）
+      *返回值：已连接套接字，这是一个新的套接字，要通信的话需要获取该套接字，这个套接字表示建立的连接
+               原来的套接字起建立连接的作用，真正进行通信的是这个套接字，失败返回-1
+
+
+  TCP三次握手
+
+         客户端                         服务器
+            |                             |
+            |    SYN J(syn请求，值为J)    |
+   connect  | --------------------------> | accept(block)
+   (block)  |                             |     |
+            |                             |     |
+            |       SYN K, ACK J+1        |     |
+   connect  | <-------------------------  |     <
+   (返回)   |                             |
+      |     |                             |
+      |     |         ACK K+1             |
+      >     | ------------------------->  | accept(返回)
+            |                             |
+            |                             |
+            |                             |
+
+
+  TCP四次挥手
+
+            |                             |
+            |          FIN M              | (被动关闭)
+     close  | --------------------------> | read返回0
+            |                             |
+            |                             |
+            |         ACK M+1             |
+            | <-------------------------  |
+            |                             |
+            |          FIN N              |
+            | <-------------------------  | close
+            |                             |
+            |        ACK N+1              |
+            | ------------------------->  |
+            |                             |
+            |                             |
+
+
+  TCP并发服务器
+
+  TCP原本不是并发服务器，TCP服务器同一时间只能与一个客户端进行通信
+
+  TCP不能实现并发的原因：
+  由于TCP服务器端又两个读阻塞函数，accept和recv，两个函数需要先后运行，所以导致运行一个函数的时候
+  另一个函数无法执行，所以无法保证一边连接客户端，一边与其它客户端通信
+
+  如何实现TCP并发服务器：
+  使用多线程实现
+  使用多进程实现
+
+  多进程实现并发流程
+
+  int sockfd = socket()
+  bind()
+  listen()
+  while(1)
+  {
+    acceptfd = accept()
+    pid = fork();
+    if (pid > 0)
+    {
+    }
+    else if (pid == 0)
+    {
+      while(1)
+      {
+        recv()/send()
+      }
+    }
+  }
+
+  多线程实现并发流程
+
+  void *thread_fun(void *arg)
+  {
+    while(1)
+    {
+      recv/send
+    }
+  }
+  int sockfd = socket()
+  bind()
+  listen()
+  while(1)
+  {
+    acceptfd = accept()
+    pthread_create(, , thread_fun, )
+    pthread_detach()//自动回收子线程资源
+  }
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,43 @@
+/*
+ * author: inkXu
+ * date:   2022.9.10
+ *
+ * ipv4套接字地址结构
+ */
+
+  网络编程使用的结构体所在的头文件为 netinet/in.h
+
+  //用来存放32位的IP地址的结构体
+  sturct in_addr
+  {
+    in_addr_t s_addr;                   //32位IP地址
+  };
+
+  //通用结构体
+  //该结构体在定义时使用的，相当于继承中的父类，在一个函数中，形参写父类，实参可以进行强制转换后传入函数中
+  //所以该结构体为通用结构体，该结构体是为了不同格式地址能被传入套接字函数，地址需要强制转换为该通用结构体
+  //类型的地址指针
+  struct sockaddr
+  {
+    __SOCKADDR_COMMON (sa_);    /* Common data: address family and length.  */ //sa_family_t sin_family;
+    char sa_data[14];           /* Address data.  */                           //ip地址
+  };
+
+  //网络编程中经常使用的结构体
+  struct sockaddr_in
+  {
+    __SOCKADDR_COMMON (sin_);                                     //sa_family_t sin_family;  协议族
+    in_port_t sin_port;                                           //端口号
+    struct in_addr sin_addr;                                      //32位结构体IP地址
+    unsigned char sin_zero[sizeof (struct sockaddr) -             //char sin_zero[8]; 填充，不起什么作用
+                           __SOCKADDR_COMMON_SIZE -
+                           sizeof (in_port_t) -
+                           sizeof (struct in_addr)];
+  };
+
+
+
+
+
+
+
